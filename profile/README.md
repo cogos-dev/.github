@@ -10,7 +10,7 @@ The model doesn't think. The substrate thinks. The model generates.
 
 CogOS externalizes two functions that models do poorly and expensively:
 
-**Externalized Attention (EA)** — deciding what information is relevant *before* the model sees it. Not retrieval. Not augmentation. Attention: selective amplification of what matters, suppression of what doesn't. Implemented as foveated context assembly — a scoring pipeline (TRM, a Mamba-based Tiny Recursive Model, + salience field) that selects and zone-orders documents for the model's context window.
+**Externalized Attention (EA)** — deciding what information is relevant *before* the model sees it. Not retrieval. Not augmentation. Attention: selective amplification of what matters, suppression of what doesn't. Implemented as foveated context assembly — a scoring pipeline (TRM, a [Tiny Recursive Model](https://arxiv.org/abs/2510.04871) implemented as a Mamba SSM for temporal context scoring, + salience field) that selects and zone-orders documents for the model's context window.
 
 **Executive Function Modulation (EFM)** — deciding how the model should behave *before* it generates. Not prompting. Modulation: shaping the computational trajectory through local-first provider routing, tool-call validation, a process state machine (Active/Receptive/Consolidating/Dormant), and consolidation policy.
 
