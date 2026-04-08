@@ -22,7 +22,9 @@ The result: a 4B parameter model on a phone produces quality comparable to much 
 |------|-----------|
 | [**cogos**](https://github.com/cogos-dev/cogos) | The kernel — continuous process daemon with foveated context, Mamba TRM, hash-chained ledger, multi-provider routing |
 | [**constellation**](https://github.com/cogos-dev/constellation) | Distributed trust — identity as temporal coherence, O(1) mutual verification, stolen keys insufficient |
-| [**mod3**](https://github.com/cogos-dev/mod3) | Voice modality — multi-model TTS on Apple Silicon, adaptive buffering, dual-modal output |
+| [**mod3**](https://github.com/cogos-dev/mod3) | Modality bus — translates between thinking and acting, voice-first with multi-model TTS on Apple Silicon |
+| [**skills**](https://github.com/cogos-dev/skills) | Plugin marketplace — 17 Agent Skills across workflow, research, voice, and dev tools |
+| [**research**](https://github.com/cogos-dev/research) | Theory — EA/EFM thesis, LoRO framework, cognitive architecture papers |
 | [**desktop**](https://github.com/cogos-dev/desktop) | Native macOS app — Wails + React, kernel management, integrated terminal |
 | [**charts**](https://github.com/cogos-dev/charts) | Deployment — Helm charts + Docker Compose for single-node through multi-node topologies |
 
