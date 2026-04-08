@@ -10,7 +10,7 @@ The model doesn't think. The substrate thinks. The model generates.
 
 CogOS externalizes two functions that models do poorly and expensively:
 
-**Externalized Attention (EA)** — deciding what information is relevant *before* the model sees it. Not retrieval. Not augmentation. Attention: selective amplification of what matters, suppression of what doesn't. Implemented as foveated context assembly — a scoring pipeline (TRM, a [Tiny Recursive Model](https://arxiv.org/abs/2510.04871) implemented as a Mamba SSM for temporal context scoring, + salience field) that selects and zone-orders documents for the model's context window.
+**Externalized Attention (EA)** — deciding what information is relevant *before* the model sees it. Not retrieval. Not augmentation. Attention: selective amplification of what matters, suppression of what doesn't. Implemented as foveated context assembly — a scoring pipeline (TRM, a [Tiny Recursive Model](https://arxiv.org/abs/2510.04871) implemented as a Mamba SSM (Selective State Space Model) for temporal context scoring, + salience field) that selects and zone-orders documents for the model's context window.
 
 **Executive Function Modulation (EFM)** — deciding how the model should behave *before* it generates. Not prompting. Modulation: shaping the computational trajectory through local-first provider routing, tool-call validation, a process state machine (Active/Receptive/Consolidating/Dormant), and consolidation policy.
 
@@ -24,9 +24,10 @@ The result: a 4B parameter model on a phone produces quality comparable to much 
 | [**constellation**](https://github.com/cogos-dev/constellation) | Distributed trust — identity as temporal coherence, O(1) mutual verification, stolen keys insufficient |
 | [**mod3**](https://github.com/cogos-dev/mod3) | Modality bus — translates between thinking and acting, voice-first with multi-model TTS on Apple Silicon |
 | [**skills**](https://github.com/cogos-dev/skills) | Plugin marketplace — 17 Agent Skills across workflow, research, voice, and dev tools |
-| [**research**](https://github.com/cogos-dev/research) | Theory — EA/EFM thesis, LoRO framework, cognitive architecture papers |
+| [**research**](https://github.com/cogos-dev/research) | Theory — EA/EFM thesis, LoRO (Low-Rank Observer) framework, cognitive architecture papers |
 | [**desktop**](https://github.com/cogos-dev/desktop) | Native macOS app — Wails + React, kernel management, integrated terminal |
 | [**charts**](https://github.com/cogos-dev/charts) | Deployment — Helm charts + Docker Compose for single-node through multi-node topologies |
+| [**openclaw-plugin**](https://github.com/cogos-dev/openclaw-plugin) | OpenClaw integration — iris-driven foveated context injection from the kernel |
 
 ## The Bet
 
