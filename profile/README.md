@@ -1,42 +1,75 @@
 # cogos-dev
 
-**Externalized attention and executive function modulation for intelligent systems.**
+Infrastructure for AI agents that need persistent memory, intelligent context, and cross-device coordination.
 
-CogOS is the substrate between observers and generators. It provides the cognitive infrastructure that AI models can't give themselves: persistent memory, foveated context assembly, multi-provider routing, distributed identity, and a voice — running on your hardware, working with any model, keeping everything yours.
+CogOS is a local-first cognitive daemon written in Go. It gives AI tools like Claude Code, Cursor, and Ollama-backed agents the things they can't give themselves: workspace memory that persists across sessions, a trained retrieval model that surfaces the right context automatically, multi-provider inference routing, and a real-time voice channel. Everything runs on your hardware. Everything stays yours.
 
-The model doesn't think. The substrate thinks. The model generates.
-
-## Architecture
-
-CogOS externalizes two functions that models do poorly and expensively:
-
-**Externalized Attention (EA)** — deciding what information is relevant *before* the model sees it. Not retrieval. Not augmentation. Attention: selective amplification of what matters, suppression of what doesn't. Implemented as foveated context assembly — a scoring pipeline (TRM, a [Tiny Recursive Model](https://arxiv.org/abs/2510.04871) implemented as a Mamba SSM (Selective State Space Model) for temporal context scoring, + salience field) that selects and zone-orders documents for the model's context window.
-
-**Executive Function Modulation (EFM)** — deciding how the model should behave *before* it generates. Not prompting. Modulation: shaping the computational trajectory through local-first provider routing, tool-call validation, a process state machine (Active/Receptive/Consolidating/Dormant), and consolidation policy.
-
-The result: a 4B parameter model on a phone produces quality comparable to much larger models in standard agent loops, because the cognitive overhead is externalized into the substrate.
+---
 
 ## Repositories
 
-| Repo | What it is |
-|------|-----------|
-| [**cogos**](https://github.com/cogos-dev/cogos) | The kernel — continuous process daemon with foveated context, Mamba TRM, hash-chained ledger, multi-provider routing |
-| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed trust — identity as temporal coherence, O(1) mutual verification, stolen keys insufficient |
-| [**mod3**](https://github.com/cogos-dev/mod3) | Modality bus — translates between thinking and acting, voice-first with multi-model TTS on Apple Silicon |
-| [**skills**](https://github.com/cogos-dev/skills) | Plugin marketplace — 17 Agent Skills across workflow, research, voice, and dev tools |
-| [**research**](https://github.com/cogos-dev/research) | Theory — EA/EFM thesis, LoRO (Low-Rank Observer) framework, cognitive architecture papers |
-| [**desktop**](https://github.com/cogos-dev/desktop) | Native macOS app — Wails + React, kernel management, integrated terminal |
-| [**charts**](https://github.com/cogos-dev/charts) | Deployment — Helm charts + Docker Compose for single-node through multi-node topologies |
-| [**openclaw-plugin**](https://github.com/cogos-dev/openclaw-plugin) | OpenClaw integration — iris-driven foveated context injection from the kernel |
+| Repo | Description | Language |
+|------|-------------|----------|
+| [**cogos**](https://github.com/cogos-dev/cogos) | The kernel -- Go daemon with foveated context assembly, trained retrieval (TRM), hash-chained ledger, multi-provider routing | Go |
+| [**mod3**](https://github.com/cogos-dev/mod3) | Model Modality Modulator -- gives agents a voice. Multi-model TTS, queue-aware output, barge-in detection. MCP server for Claude Code | Python |
+| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity protocol -- trust earned through temporal consistency, not granted by authority. Hash-chained event ledgers, O(1) mutual verification | Go |
+| [**research**](https://github.com/cogos-dev/research) | Research foundations -- EA/EFM thesis, LoRO (Low-Rank Observer) framework | Docs |
+| [**skills**](https://github.com/cogos-dev/skills) | Plugin marketplace -- skills, agents, and modality integrations for Claude Code | YAML/MD |
+| [**desktop**](https://github.com/cogos-dev/desktop) | Native macOS app -- Wails + React, kernel management, integrated terminal. No Electron | Go/TS |
+| [**charts**](https://github.com/cogos-dev/charts) | Helm charts for deploying CogOS nodes to Kubernetes | Helm |
 
-## The Bet
+---
 
-Every other approach says "make the model smarter." More parameters, more training data, more RLHF.
+## What makes this different
 
-CogOS says: make the environment more structured so that *any* intelligence — human or machine — can operate more effectively within it.
+**Learned retrieval, not keyword search.** The kernel includes a 2.3M-parameter Mamba SSM (Tiny Recursive Model) trained over 631 experiments from 0.424 to 0.900 NDCG. It scores workspace documents by temporal salience, edit recency, and semantic relevance, then assembles a focused context window -- before the model sees anything. Runs inference locally in ~6KB of state.
 
-The model is a dependent variable. The substrate is the independent variable.
+**Foveated context assembly.** On every prompt, a `UserPromptSubmit` hook fires, the context engine scores all workspace documents, and injects a zone-ordered context window optimized for KV cache reuse. The model gets a pre-focused window instead of everything-or-nothing.
 
-## License
+**Multi-provider routing.** OpenAI-compatible and Anthropic Messages-compatible HTTP API. Works with Ollama, LM Studio, Claude, GPT, and any OpenAI-compatible endpoint. Local models preferred by default.
 
-All repositories are MIT licensed.
+**Content-addressed storage.** Every routing decision, context assembly, and state transition is recorded in an append-only, hash-chained ledger (SHA-256, RFC 8785 canonical JSON). Full audit trail, tamper-evident.
+
+**Real-time voice.** Mod3 runs four TTS engines on Apple Silicon (Kokoro 82M, Voxtral 4B, Chatterbox ~1B, Spark 0.5B) with adaptive buffering, sentence-boundary chunking, and barge-in detection. Non-blocking -- the agent keeps working while it speaks.
+
+**Distributed mesh.** Constellation uses BEP-based sync and content-addressed blocks for cross-device coordination. Identity is a dynamical property -- coherence with history -- not a static credential.
+
+---
+
+## Quick start
+
+```sh
+# Build the kernel
+git clone https://github.com/cogos-dev/cogos.git
+cd cogos
+make build
+
+# Start the daemon
+./cogos serve --workspace ~/my-project
+# http://localhost:6931/health
+```
+
+Requirements: Go 1.24+, macOS or Linux.
+
+For voice, add [Mod3](https://github.com/cogos-dev/mod3) as an MCP server (`./setup.sh` and add to `.mcp.json`).
+
+For deployment, see [charts](https://github.com/cogos-dev/charts) for Helm and Docker Compose options.
+
+---
+
+## Research
+
+The design is grounded in two ideas documented in the [research](https://github.com/cogos-dev/research) repo:
+
+- **Externalized Attention (EA)** -- deciding what information is relevant *before* the model sees it. Implemented as the foveated context engine and TRM scorer.
+- **Executive Function Modulation (EFM)** -- shaping model behavior through provider routing, tool-call validation, and a process state machine, rather than prompt engineering alone.
+
+The thesis: agent quality is a function of boundary quality. Better context in, better output out. The kernel handles the cognitive overhead so the model can focus on generation.
+
+---
+
+## Contributing
+
+All repositories are MIT licensed. Issues and PRs are welcome.
+
+If you're interested in the retrieval model, context engine, or voice channel, start with the individual repo READMEs -- each has build instructions and architecture docs.
