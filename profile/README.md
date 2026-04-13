@@ -68,6 +68,20 @@ The thesis: agent quality is a function of boundary quality. Better context in, 
 
 ---
 
+## CI
+
+All repositories share reusable workflows defined in [`.github`](https://github.com/cogos-dev/.github):
+
+| Workflow | What it does |
+|----------|-------------|
+| `go-ci.yml` | `go vet`, build, `go test -race`, golangci-lint, optional e2e |
+| `py-ci.yml` | ruff lint + format, optional pyright, pytest, optional smoke test |
+| `pr-checks.yml` | CHANGELOG reminder, required files validation |
+
+Repos call these via `workflow_call` -- see any repo's `.github/workflows/ci.yml` for an example. Dependabot is configured org-wide for Go modules, pip, and GitHub Actions.
+
+---
+
 ## Contributing
 
 All repositories are MIT licensed. Issues and PRs are welcome.

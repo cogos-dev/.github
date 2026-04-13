@@ -1,0 +1,45 @@
+name: PR Checks
+
+on:
+  workflow_call:
+    inputs:
+      check-changelog:
+        required: false
+        type: boolean
+        default: true
+      check-required-files:
+        required: false
+        type: boolean
+        default: true
+      required-files:
+        required: false
+        type: string
+        default: 'README.md LICENSE'
+
+jobs:
+  changelog:
+    if: inputs.check-changelog && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check CHANGELOG updated
+        run: |
+          if ! git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q CHANGELOG.md; then
+            echo "::warning file=CHANGELOG.md::CHANGELOG.md was not updated"
+          fi
+
+  required-files:
+    if: inputs.check-required-files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required files exist
+        run: |
+          for f in ${{ inputs.required-files }}; do
+            if [ ! -f "$f" ]; then
+              echo "::error::Required file $f is missing"
+              exit 1
+            fi
+          done
