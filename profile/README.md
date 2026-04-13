@@ -26,6 +26,47 @@ CogOS is a local-first cognitive daemon written in Go. It gives AI tools like Cl
 └─────────────────────────────────────────────────────┘
 ```
 
+### Runtime
+
+How the services connect when running locally on Apple Silicon:
+
+```
+                     Claude Code · Discord · Browser · CLI
+                                    │
+                                    ▼  HTTP / WebSocket / MCP
+              ┌─────────────────────────────────────────────┐
+              │            CogOS Kernel  :6931               │
+              │                                              │
+              │  Inference   Context    Bus       Reconcile  │
+              │  Router      Engine    (events)   Loop       │
+              │  (multi-     (foveated  (JSONL    (plan/     │
+              │   provider)   + TRM)    ledger)    apply)    │
+              │                                              │
+              │  ┌────────── Modality Pipeline ───────────┐  │
+              │  │  Text Module        Voice Module       │  │
+              │  │  (always on)     (auto-discovered     │  │
+              │  │                   from service CRD)    │  │
+              │  └──────────────────────┬────────────────┘  │
+              └─────────────────────────┼────────────────────┘
+                                        │  HTTP :7860
+                                        ▼
+              ┌─────────────────────────────────────────────┐
+              │              Mod³  :7860                     │
+              │                                              │
+              │  Kokoro 82M · Voxtral 4B · Chatterbox ~1B   │
+              │  Whisper STT · Silero VAD · Agent Loop       │
+              │  Dashboard /dashboard · WebSocket /ws/chat   │
+              │  Barge-in detection (SuperWhisper)            │
+              └──────────┬───────────────────┬──────────────┘
+                         │                   │
+                         ▼                   ▼
+                    ┌─────────┐        ┌───────────┐
+                    │ Speaker │        │  Ollama   │
+                    │ (audio) │        │  :11434   │
+                    └─────────┘        │ (Gemma 4) │
+                                       └───────────┘
+```
+
 ### Quick Start
 
 - **Run locally:** Install [cogos](https://github.com/cogos-dev/cogos), add [Mod³](https://github.com/cogos-dev/mod3) for voice
