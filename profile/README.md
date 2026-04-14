@@ -19,90 +19,47 @@ CogOS is a local-first cognitive daemon written in Go. It gives AI tools like Cl
 │  Reconcile   │  Dashboard   │                        │
 ├──────────────┴──────────────┴───────────────────────┤
 │                   Extensions                         │
-│   skills · openclaw-plugin · research                │
-├─────────────────────────────────────────────────────┤
-│                   Deployment                         │
-│   desktop (macOS) · charts (Helm/k8s)                │
+│   skills · charts (experimental)                     │
 └─────────────────────────────────────────────────────┘
 ```
-
-### Runtime
-
-How the services connect when running locally on Apple Silicon:
-
-```
-                     Claude Code · Discord · Browser · CLI
-                                    │
-                                    ▼  HTTP / WebSocket / MCP
-              ┌─────────────────────────────────────────────┐
-              │            CogOS Kernel  :6931               │
-              │                                              │
-              │  Inference   Context    Bus       Reconcile  │
-              │  Router      Engine    (events)   Loop       │
-              │  (multi-     (foveated  (JSONL    (plan/     │
-              │   provider)   + TRM)    ledger)    apply)    │
-              │                                              │
-              │  ┌────────── Modality Pipeline ───────────┐  │
-              │  │  Text Module        Voice Module       │  │
-              │  │  (always on)     (auto-discovered     │  │
-              │  │                   from service CRD)    │  │
-              │  └──────────────────────┬────────────────┘  │
-              └─────────────────────────┼────────────────────┘
-                                        │  HTTP :7860
-                                        ▼
-              ┌─────────────────────────────────────────────┐
-              │              Mod³  :7860                     │
-              │                                              │
-              │  Kokoro 82M · Voxtral 4B · Chatterbox ~1B   │
-              │  Whisper STT · Silero VAD · Agent Loop       │
-              │  Dashboard /dashboard · WebSocket /ws/chat   │
-              │  Barge-in detection (SuperWhisper)            │
-              └──────────┬───────────────────┬──────────────┘
-                         │                   │
-                         ▼                   ▼
-                    ┌─────────┐        ┌───────────┐
-                    │ Speaker │        │  Ollama   │
-                    │ (audio) │        │  :11434   │
-                    └─────────┘        │ (Gemma 4) │
-                                       └───────────┘
-```
-
-### Quick Start
-
-- **Run locally:** Install [cogos](https://github.com/cogos-dev/cogos), add [Mod³](https://github.com/cogos-dev/mod3) for voice
-- **Deploy to k8s:** Use [charts](https://github.com/cogos-dev/charts) with Helm
-- **Build plugins:** Browse [skills](https://github.com/cogos-dev/skills) or create an [OpenClaw plugin](https://github.com/cogos-dev/openclaw-plugin)
 
 ---
 
 ## Repositories
 
-| Repo | Description | Language |
-|------|-------------|----------|
-| [**cogos**](https://github.com/cogos-dev/cogos) | The kernel -- Go daemon with foveated context assembly, trained retrieval (TRM), hash-chained ledger, multi-provider routing | Go |
-| [**mod3**](https://github.com/cogos-dev/mod3) | Model Modality Modulator -- gives agents a voice. Multi-model TTS, queue-aware output, barge-in detection. MCP server for Claude Code | Python |
-| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity protocol -- trust earned through temporal consistency, not granted by authority. Hash-chained event ledgers, O(1) mutual verification | Go |
-| [**research**](https://github.com/cogos-dev/research) | Research foundations -- EA/EFM thesis, LoRO (Low-Rank Observer) framework | Docs |
-| [**openclaw-plugin**](https://github.com/cogos-dev/openclaw-plugin) | OpenClaw digestion adapter for Claude Code | Go |
-| [**skills**](https://github.com/cogos-dev/skills) | Plugin marketplace -- skills, agents, and modality integrations for Claude Code | YAML/MD |
-| [**desktop**](https://github.com/cogos-dev/desktop) | Native macOS app -- Wails + React, kernel management, integrated terminal. No Electron | Go/TS |
-| [**charts**](https://github.com/cogos-dev/charts) | Helm charts for deploying CogOS nodes to Kubernetes | Helm |
+### Active
+
+| Repo | Description | Language | Status |
+|------|-------------|----------|--------|
+| [**cogos**](https://github.com/cogos-dev/cogos) | The kernel — Go daemon with reconciliation framework, foveated context assembly, trained retrieval (TRM), multi-provider inference routing, modality pipeline, BEP sync engine | Go | v0.1.0 |
+| [**mod3**](https://github.com/cogos-dev/mod3) | Model Modality Modulator — multi-model TTS with queue-aware output and barge-in detection. MCP server for Claude Code | Python | v0.1.0 |
+| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity POC — ECDSA P-256 identity, EMA trust scoring, hash-chained event ledgers | Go | v0.1.0 |
+| [**skills**](https://github.com/cogos-dev/skills) | Portable skill definitions (SKILL.md files) for Claude Code and compatible agents | Markdown | — |
+| [**charts**](https://github.com/cogos-dev/charts) | Helm charts for Kubernetes deployment (experimental, not production-tested) | Helm | — |
+
+### Archived
+
+| Repo | Reason |
+|------|--------|
+| desktop | Early stage, not representative |
+| openclaw-plugin | External dependency, not maintained |
+| research | Architectural essays, no runnable code |
 
 ---
 
-## What makes this different
+## What the kernel actually does
 
-**Learned retrieval, not keyword search.** The kernel includes a 2.3M-parameter Mamba SSM (Tiny Recursive Model) trained over 631 experiments from 0.424 to 0.900 NDCG. It scores workspace documents by temporal salience, edit recency, and semantic relevance, then assembles a focused context window -- before the model sees anything. Runs inference locally in ~6KB of state.
+**Reconciliation framework.** 8 providers (agent, component, discord, mcp-tools, service, and 3 OpenClaw providers) with a Terraform-style plan/apply loop, topological ordering via Kahn's algorithm, and atomic state writes with lineage tracking.
 
-**Foveated context assembly.** On every prompt, a `UserPromptSubmit` hook fires, the context engine scores all workspace documents, and injects a zone-ordered context window optimized for KV cache reuse. The model gets a pre-focused window instead of everything-or-nothing.
+**Foveated context assembly.** On every prompt, a `UserPromptSubmit` hook fires, the context engine scores all workspace documents via a 2.3M-parameter Mamba SSM (Tiny Recursive Model, trained over 631 experiments to 0.900 NDCG), and injects a zone-ordered context window optimized for KV cache reuse.
 
-**Multi-provider routing.** OpenAI-compatible and Anthropic Messages-compatible HTTP API. Works with Ollama, LM Studio, Claude, GPT, and any OpenAI-compatible endpoint. Local models preferred by default.
+**Multi-provider routing.** OpenAI-compatible and Anthropic Messages-compatible HTTP API. Works with Ollama, LM Studio, Claude, GPT, and any OpenAI-compatible endpoint.
 
-**Content-addressed storage.** Every routing decision, context assembly, and state transition is recorded in an append-only, hash-chained ledger (SHA-256, RFC 8785 canonical JSON). Full audit trail, tamper-evident.
+**Modality pipeline.** Bus, router, pipeline, and supervisor for text/voice channels with a full D2 wire protocol. Text module complete; voice module connects to Mod3.
 
-**Real-time voice.** Mod³ runs four TTS engines on Apple Silicon (Kokoro 82M, Voxtral 4B, Chatterbox ~1B, Spark 0.5B) with adaptive buffering, sentence-boundary chunking, and barge-in detection. Non-blocking -- the agent keeps working while it speaks.
+**BEP sync engine.** TLS transport with mutual ECDSA authentication, wire protocol with protowire encoding. Phase 1 (fsnotify-based provider).
 
-**Distributed mesh.** Constellation uses BEP-based sync and content-addressed blocks for cross-device coordination. Identity is a dynamical property -- coherence with history -- not a static credential.
+**Coordination protocol.** 5 primitives (claim, release, checkpoint, handoff, broadcast) with file-based storage and 12 CLI subcommands.
 
 ---
 
@@ -121,20 +78,7 @@ make build
 
 Requirements: Go 1.24+, macOS or Linux.
 
-For voice, add [Mod³](https://github.com/cogos-dev/mod3) as an MCP server (`./setup.sh` and add to `.mcp.json`).
-
-For deployment, see [charts](https://github.com/cogos-dev/charts) for Helm and Docker Compose options.
-
----
-
-## Research
-
-The design is grounded in two ideas documented in the [research](https://github.com/cogos-dev/research) repo:
-
-- **Externalized Attention (EA)** -- deciding what information is relevant *before* the model sees it. Implemented as the foveated context engine and TRM scorer.
-- **Executive Function Modulation (EFM)** -- shaping model behavior through provider routing, tool-call validation, and a process state machine, rather than prompt engineering alone.
-
-The thesis: agent quality is a function of boundary quality. Better context in, better output out. The kernel handles the cognitive overhead so the model can focus on generation.
+For voice, add [Mod3](https://github.com/cogos-dev/mod3) as an MCP server.
 
 ---
 
@@ -144,16 +88,12 @@ All repositories share reusable workflows defined in [`.github`](https://github.
 
 | Workflow | What it does |
 |----------|-------------|
-| `go-ci.yml` | `go vet`, build, `go test -race`, golangci-lint, optional e2e |
-| `py-ci.yml` | ruff lint + format, optional pyright, pytest, optional smoke test |
+| `go-ci.yml` | `go vet`, build, `go test -race`, golangci-lint |
+| `py-ci.yml` | ruff lint + format, pytest |
 | `pr-checks.yml` | CHANGELOG reminder, required files validation |
-
-Repos call these via `workflow_call` -- see any repo's `.github/workflows/ci.yml` for an example. Dependabot is configured org-wide for Go modules, pip, and GitHub Actions.
 
 ---
 
 ## Contributing
 
 All repositories are MIT licensed. Issues and PRs are welcome.
-
-If you're interested in the retrieval model, context engine, or voice channel, start with the individual repo READMEs -- each has build instructions and architecture docs.
