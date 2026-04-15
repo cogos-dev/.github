@@ -2,9 +2,9 @@
 
 Infrastructure for AI agents that need persistent memory, intelligent context, and cross-device coordination.
 
-CogOS is a local-first cognitive daemon written in Go with a Python voice channel. It gives AI tools like Claude Code and Ollama-backed agents the things they can't give themselves: workspace memory that persists across sessions, a trained retrieval model that surfaces the right context automatically, multi-provider inference routing with sovereignty-aware scheduling, and a real-time voice channel. Everything runs on your hardware. Everything stays yours.
+CogOS is a local-first cognitive daemon written in Go with a Python voice channel. It gives AI tools like Claude Code and Ollama-backed agents the things they can't give themselves: workspace memory that persists across sessions, a trained retrieval model that surfaces the right context automatically, multi-provider inference routing with sovereignty-aware scheduling, and a bidirectional voice pipeline. Everything runs on your hardware. Everything stays yours.
 
-The kernel defines typed interfaces in Go. Modality servers implement them in any language. The wire protocol between them is the contract — language doesn't matter, shape compatibility does.
+The kernel ships 7 importable library packages (`pkg/`), a native agent harness with local model support (Gemma E4B), and protocol adapters for MCP Streamable HTTP and the Anthropic Messages API. Modality servers implement typed interfaces in any language — the wire protocol is the contract.
 
 ## Architecture
 
@@ -39,7 +39,7 @@ The kernel defines typed interfaces in Go. Modality servers implement them in an
 │                     │  Local   │  Cloud    │                             │
 │                     │  Ollama  │  Claude   │                             │
 │                     │  LM Stu. │  GPT      │                             │
-│                     │  Desktop │  Codex    │                             │
+│                     │  Gemma   │  Codex    │                             │
 │                     │  (LAN)   │           │                             │
 │                     └──────────┴───────────┘                             │
 │                                                                          │
@@ -75,8 +75,9 @@ The kernel defines typed interfaces in Go. Modality servers implement them in an
 
 ┌──────────────────────────────────────────────────────────────────────────┐
 │  EXTENSIONS                                                              │
-│  skills — SKILL.md definitions for Claude Code agents                   │
-│  charts — Helm charts for Kubernetes deployment (experimental)          │
+│  research  — LoRO training pipeline, Mamba SSM re-ranker, eval framework│
+│  skills    — SKILL.md definitions for Claude Code agents                │
+│  charts    — Helm charts for Kubernetes deployment (experimental)       │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -88,31 +89,37 @@ The kernel defines typed interfaces in Go. Modality servers implement them in an
 
 | Repo | Description | Language | Version |
 |------|-------------|----------|---------|
-| [**cogos**](https://github.com/cogos-dev/cogos) | The kernel — Go daemon with reconciliation framework (8 providers), foveated context assembly, multi-provider inference routing, modality pipeline, BEP sync, coordination protocol. 150K LOC, 1,130 tests. | Go | v0.1.0 |
-| [**mod3**](https://github.com/cogos-dev/mod3) | Model Modality Modulator — multi-model TTS (Kokoro, Voxtral, Chatterbox, Spark) with queue-aware output, barge-in detection, and browser dashboard. MCP server for Claude Code. | Python | v0.1.0 |
-| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity POC — ECDSA P-256 identity, EMA trust scoring (0.7/0.4/0.2 thresholds), 3-layer coherence validation, hash-chained event ledgers. 89 tests. | Go | v0.1.0 |
+| [**cogos**](https://github.com/cogos-dev/cogos) | Cognitive daemon for AI agents. Foveated context assembly, learned retrieval (TRM), persistent memory, multi-provider routing. 7 importable library packages (`pkg/`), native agent harness, MCP Streamable HTTP, Anthropic Messages API proxy. | Go | v0.1.0 |
+| [**mod3**](https://github.com/cogos-dev/mod3) | Model Modality Modulator. Multi-model TTS (Kokoro, Voxtral, Chatterbox, Spark) with queue-aware output, barge-in detection, and turn-taking. Bidirectional voice pipeline, MCP shim, browser dashboard. | Python | v0.1.0 |
+| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity protocol. O(1) verification, hash-chained coherence, stolen keys insufficient for impersonation. | Go | v0.1.0 |
+| [**research**](https://github.com/cogos-dev/research) | Research foundations. EA/EFM thesis, LoRO framework (unified Low-Rank Observer abstraction), Mamba SSM training pipeline, evaluation methodology. | Python | — |
 | [**skills**](https://github.com/cogos-dev/skills) | Portable skill definitions (SKILL.md files) for Claude Code and compatible agents | Markdown | — |
-| [**charts**](https://github.com/cogos-dev/charts) | Helm charts for Kubernetes deployment (experimental) | Helm | — |
+| [**charts**](https://github.com/cogos-dev/charts) | Helm charts for deploying CogOS nodes to Kubernetes | Helm | — |
 
 ### Archived
 
 | Repo | Reason |
 |------|--------|
-| desktop | Early stage, not representative |
-| openclaw-plugin | External dependency, not maintained |
-| research | Content folded into kernel docs |
+| desktop | Functionality absorbed by kernel dashboard |
+| openclaw-plugin | Foveated context engine for OpenClaw (archived) |
 
 ---
 
 ## What the kernel does
 
-**Reconciliation framework.** 8 providers (agent, component, discord, mcp-tools, service, openclaw-gateway, openclaw-agents, openclaw-cron) with a Terraform-style plan/apply/snapshot lifecycle. Topological ordering via Kahn's algorithm. Atomic state writes with lineage tracking and serial numbers. Continuous reconciliation via 5-minute serve loop with watch mode and field-reactive conditions.
-
 **Foveated context assembly.** On every prompt, a `UserPromptSubmit` hook fires and the context engine scores workspace documents via a trained Mamba SSM (Tiny Recursive Model, 0.878 mean NDCG). Injects a zone-ordered context window optimized for KV cache reuse.
+
+**Library extraction.** 7 importable Go packages under `pkg/` — context assembly, inference routing, coordination, modality, reconciliation, and more. The kernel is a daemon *and* a library.
+
+**Native agent harness.** Built-in agent runner with local model support (Gemma E4B via Ollama). Agents execute within the kernel process with full access to memory and context primitives.
 
 **Multi-provider inference routing.** OpenAI-compatible and Anthropic Messages-compatible HTTP APIs. Routes to the best available provider based on a sovereignty gradient: local inference preferred, cloud escalation when needed. Works with Ollama, LM Studio, Claude, GPT, Codex, and any OpenAI-compatible endpoint — including remote nodes on the LAN.
 
-**Modality pipeline.** Bus, router, pipeline, and supervisor for text/voice channels with a full D2 wire protocol. The Go kernel defines the modality interface; language-specific servers (like Mod3 in Python) implement it. Text module complete. Voice module connects to Mod3 via wire protocol.
+**MCP protocol support.** MCP Streamable HTTP server and Anthropic Messages API proxy. The kernel speaks the protocols that AI tools already use.
+
+**Reconciliation framework.** 8 providers (agent, component, discord, mcp-tools, service, openclaw-gateway, openclaw-agents, openclaw-cron) with a Terraform-style plan/apply/snapshot lifecycle. Topological ordering via Kahn's algorithm. Atomic state writes with lineage tracking and serial numbers.
+
+**Bidirectional voice pipeline.** Modality bus with text and voice channels. The Go kernel defines the interface; Mod3 (Python) implements it. Queue-aware TTS output, barge-in detection, and turn-taking via wire protocol.
 
 **BEP sync engine.** TLS transport with mutual ECDSA authentication, wire protocol with protowire encoding. Phase 1 implementation (fsnotify-based file watching). Designed for multi-node workspace synchronization.
 
