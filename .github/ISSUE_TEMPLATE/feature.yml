@@ -1,0 +1,50 @@
+name: Feature Request
+description: Suggest an improvement or new capability
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Fill in the fields below so we can evaluate
+        the proposal and place it against existing roadmap.
+  - type: dropdown
+    id: project
+    attributes:
+      label: Which project?
+      options:
+        - cogos (kernel)
+        - cog-sandbox-mcp
+        - mod3 (voice)
+        - constellation (identity)
+        - charts (Helm)
+        - skills (marketplace)
+        - research
+        - other / cross-cutting
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the user-facing or operator-facing need. Prefer
+        problem statements over solution statements.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How might this be addressed? Rough shape is fine — this is
+        a proposal, not a spec.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you weighed and why they were set aside.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Links to related issues, ADRs, prior-art, or screenshots.
