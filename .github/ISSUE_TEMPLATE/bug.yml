@@ -1,0 +1,74 @@
+name: Bug Report
+description: Report a bug in any cogos-dev project
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill out
+        the fields below so we can reproduce and fix the issue.
+  - type: dropdown
+    id: project
+    attributes:
+      label: Which project?
+      options:
+        - cogos (kernel)
+        - cog-sandbox-mcp
+        - mod3 (voice)
+        - constellation (identity)
+        - charts (Helm)
+        - skills (marketplace)
+        - research
+        - desktop (archived)
+        - openclaw-plugin (archived)
+        - other / cross-cutting
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the behavior you observed.
+      placeholder: When I do X, Y happens.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: What should have happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: Steps to reliably trigger the bug. Minimal repro preferred.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `cogos version` or the commit SHA you built from.
+      placeholder: e.g. v0.3.0 or 1a2b3c4
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: macOS 15.1 / Ubuntu 24.04 / etc.
+  - type: input
+    id: runtime
+    attributes:
+      label: Go / Python version
+      placeholder: go1.24.2 / Python 3.12.4
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Paste any relevant log output or error messages.
+      render: shell
