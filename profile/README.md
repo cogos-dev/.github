@@ -1,167 +1,110 @@
 # cogos-dev
 
-Infrastructure for AI agents that need persistent memory, intelligent context, and cross-device coordination.
+Every modern AI tool has its own memory. Claude Code remembers. Cursor remembers. Your custom agent remembers. But none of them share with each other, none of them follow you across machines, and there's no shape for what's local versus what's shared.
 
-CogOS is a local-first cognitive daemon written in Go with a Python voice channel. It gives AI tools like Claude Code and Ollama-backed agents the things they can't give themselves: workspace memory that persists across sessions, a trained retrieval model that surfaces the right context automatically, multi-provider inference routing with sovereignty-aware scheduling, a bidirectional voice pipeline, and now an observable, mutable substrate — hash-chained ledger, live event bus, kernel slog capture, and agent-state control — all exposed through MCP and HTTP. Everything runs on your hardware. Everything stays yours.
-
-The kernel ships 7 importable library packages (`pkg/`), a native agent harness with local model support (Gemma E4B), a 30-tool MCP surface, and protocol adapters for MCP Streamable HTTP and the Anthropic Messages API. Modality servers implement typed interfaces in any language — the wire protocol is the contract.
+CogOS is the layer underneath. Persistent workspaces any AI tool can plug into. Cross-tool, cross-device, cross-org. Hierarchical like git remotes, but recursive: keep what's local local, promote what matters upstream, sync what's yours across your machines.
 
 ## Architecture
 
 ```
-                 AI AGENTS  ·  TOOLS  ·  CLIENTS
-       Claude Code  ·  Cursor  ·  Ollama  ·  MCP clients
-                              │
-                    prompts · MCP · HTTP
-                              ▼
-   ┌──────────────────────────────────────────────────────────┐
-   │         COGOS KERNEL   —   Go daemon on :6931            │
-   │                                                          │
-   │   Context          Observability       State             │
-   │   ───────          ─────────────       ─────             │
-   │   foveated         hash-chained        config RFC 7396   │
-   │   TRM-scored       ledger + bus        agent harness     │
-   │   KV-cache aware   kernel slog         reconciliation    │
-   │                                                          │
-   │   Sessions         Inference           Library           │
-   │   ────────         ─────────           ───────           │
-   │   atomic claim     OpenAI-compat       7 pkg/ modules    │
-   │   first-wins       Anthropic Msgs      ~10K LOC          │
-   │   bus = truth      sovereign routing   190 tests         │
-   │                                                          │
-   │      30 MCP tools  ·  /v1/* HTTP  ·  BEP sync engine     │
-   └────────┬───────────────────┬───────────────────┬─────────┘
-            │                   │                   │
-            ▼                   ▼                   ▼
-   ┌───────────────┐  ┌──────────────────┐  ┌────────────────┐
-   │     MOD3      │  │ COG-SANDBOX-MCP  │  │  CONSTELLATION │
-   │    Python     │  │      Python      │  │       Go       │
-   ├───────────────┤  ├──────────────────┤  ├────────────────┤
-   │  Voice I/O    │  │ Multi-session    │  │ ECDSA P-256    │
-   │  TTS + STT    │  │   bridge :7823   │  │ EMA trust      │
-   │  Kokoro       │  │ Handoff protocol │  │ Hash-chained   │
-   │  Voxtral      │  │ Session registry │  │   coherence    │
-   │  Chatterbox   │  │ 12 cogos_* tools │  │ O(1) verify    │
-   │  Barge-in     │  │ HTTP streamable  │  │ Behavioral     │
-   └───────────────┘  └──────────────────┘  └────────────────┘
-
-   providers:  Ollama · LM Studio · Claude · GPT · Codex · LAN peers
-   ecosystem:  research  ·  skills  ·  charts
+┌─────────────────────────────────────────────────────────┐
+│  Your AI tools                                          │
+│  Claude Code · Cursor · custom agents · Ollama · …      │
+└────────────────────┬────────────────────────────────────┘
+                     │ hooks · MCP · HTTP
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  CogOS kernel  (local Go daemon)                        │
+│  Owns workspace state. Hosts subsystems. Exposes        │
+│  protocol surfaces for whatever AI tool plugs in.       │
+└────────────────────┬────────────────────────────────────┘
+                     │ reads & writes
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│  Workspace  (any directory)                             │
+│                                                         │
+│    your-project/                                        │
+│    ├─ src/  docs/  …     ← your stuff, untouched        │
+│    ├─ .git/               ← code history (optional)     │
+│    └─ .cog/               ← cognitive overlay           │
+│       ├─ mem/    cogdocs (memory)                       │
+│       ├─ run/    bus events, traces                     │
+│       └─ ledger/ hash-chained record                    │
+└─────────────────────────────────────────────────────────┘
 ```
 
----
+Three pieces:
 
-## What's new (2026-04-22)
+- **Your AI tools** speak to the kernel through hooks, MCP, and HTTP. Anything that can call a local endpoint or run a hook can plug in.
+- **The CogOS kernel** is one local Go daemon. It owns workspace state, hosts subsystems (context assembly, inference routing, reconcilers, event bus, ledger), and exposes the protocol surfaces.
+- **The workspace** is any directory you point the kernel at. CogOS adds a `.cog/` overlay alongside whatever else is there. Your codebase. A notes folder. An empty project. Same shape regardless.
 
-**v0.3.0 released.** Pre-1.0 reset tag. Consolidates Track 5 dead-code removal (-28,922 LoC net from the kernel root) and the full 8-gap Agent F critical MCP surface buildout. First tag in the reset series; the prior aspirational `v2.x` numbering was never tagged. See the [cogos CHANGELOG](https://github.com/cogos-dev/cogos/blob/main/CHANGELOG.md).
+## .cog/ and .git/
 
-**All 8 critical MCP gaps closed.** The final gap — session management — landed as a hybrid: kernel owns session/handoff invariants with bus-level first-wins atomic claim (not just in-memory); bridge keeps the Python `cogos_*` ergonomics layer. Two MCP surfaces coexist by design: 8 `cogos_*` via the Python bridge, 8 new `cog_*_session|handoff_*` via the engine. Bus stays ground truth; registries are derived views rebuilt from seq-sorted replay on startup. `handoff.claim_rejected` observability event emits on every rejection.
+The cognitive overlay (`.cog/`) and git's overlay (`.git/`) are siblings. Neither owns the other. The cognitive ledger can reference git blob hashes directly when it needs to point at code content, so there's no duplication: git keeps its objects, `.cog/` keeps its cogdocs, and content-addressing lets each refer to the other.
 
-**MCP surface 8 → 30 tools.** In addition to sessions/handoffs: ledger (`cog_read_ledger`), trace search (`cog_search_traces`), event bus (`cog_tail_events`, `cog_query_events`), conversations (`cog_read_conversation`), tool calls (`cog_read_tool_calls`, `cog_tail_tool_calls`), agent state (`cog_list_agents`, `cog_get_agent_state`, `cog_trigger_agent_loop`), kernel slog (`cog_tail_kernel_log`), and live config (`cog_read_config`, `cog_write_config`, `cog_rollback_config`).
+Initialize CogOS in an empty folder and you get a fresh workspace with no code history. Initialize it in an existing repo and the salience scorer reads git's history (recency, edit patterns, blast radius) as input, without taking ownership of any of git's data.
 
-**Track 5 refactor shipped.** Root package went from 185 non-test files / 80K LoC to 132 files / 51K LoC. Installed binary is now engine-built (`go build ./cmd/cogos/`); `/v1/bus/*` and `/v1/sessions` routes ported to the engine byte-compat; 45 dormant root files swept.
+## Workspaces compose
 
-**Event bus broker is live.** Hooked inside `AppendEvent`; real SSE stream at `/v1/bus/:id/events/stream`. `cog bus send` for write symmetry.
+A workspace is just a directory with a `.cog/` overlay. You can have many.
 
-**Ledger exposure.** Hash-chained events queryable via MCP and HTTP `/v1/ledger` (with optional `?verify_chain=true`).
+The composition is recursive, modeled on git remotes. Your workspace can have an upstream (your team's workspace, say) and selectively promote knowledge to it the way you push commits to origin. That upstream can have its own upstream. Local stays local until you explicitly promote it.
 
-**Config mutation API.** RFC 7396 merge-patch over `/v1/config`, atomic writes + rotating backups + rollback.
+The result is a topology where personal context lives where it belongs, organizational knowledge is shared deliberately rather than absorbed by default, and nothing about your workflow leaves your machine without you choosing.
 
-**Trace search and kernel slog.** Three non-overlapping observability lanes now have MCP + HTTP + on-disk artifacts: ledger (durable hash-chained), traces (client metabolites), kernel slog (runtime logs via `teeHandler`, JSONL sink at `.cog/run/kernel.log.jsonl`).
+## What the kernel does
 
-**Ops.** `--bind` flag + `bind_addr` YAML (loopback default; CORS relaxed on non-loopback bind). Windows Makefile targets, install docs, and linux/arm64 cross-compilation unblocked.
+The CogOS kernel (`cogos`) is one Go binary that:
 
-**Multi-session substrate.** `cog-sandbox-mcp` v0.4.1 ships HTTP streamable transport, session + handoff bridge tools, and the HANDOFF_PROTOCOL spec. Docker compose now has `bridge-{primary,secondary}` and `tailscale-{primary,secondary}` siblings.
+- **Externalized attention.** Intercepts each prompt to a connected AI tool and assembles a focused context window before the model sees it. The substrate decides what's relevant, not the model.
+- **Multi-provider inference.** Routes through local and cloud providers behind OpenAI-compatible and Anthropic Messages-compatible endpoints. Local-first, cloud when you want it.
+- **Hash-chained ledger.** Persists every routing decision, context assembly, state transition, tool call, and config mutation as a content-addressed CogBlock. Append-only, optionally chain-verified.
+- **Live event bus.** In-process broker with SSE streaming. Subsystems and external tools subscribe and see writes in real time.
+- **MCP, OpenAI, and Anthropic protocol support.** Speaks the protocols your AI tools already use. Always-on MCP Streamable HTTP server with sessions and JSON-RPC 2.0.
+- **Reconcilers.** Autonomic loops that maintain workspace invariants. Plan, apply, snapshot, rollback. Topological ordering.
+- **Native agent harness.** Local-model assessment loop running inside the kernel process with kernel-native tools.
 
----
+Full feature surface: see the [cogos repo](https://github.com/cogos-dev/cogos).
 
 ## Repositories
 
 ### Active
 
-| Repo | Description | Language | Version |
-|------|-------------|----------|---------|
-| [**cogos**](https://github.com/cogos-dev/cogos) | Cognitive daemon for AI agents. Foveated context, learned retrieval (TRM), persistent memory, multi-provider routing. 7 importable library packages (`pkg/`), native agent harness, event bus + hash-chained ledger, config mutation API, trace query, kernel slog capture, kernel-native session management with atomic handoff claim, 30 MCP tools, Anthropic Messages proxy. | Go | v0.3.0 |
-| [**cog-sandbox-mcp**](https://github.com/cogos-dev/cog-sandbox-mcp) | Multi-session MCP bridge. HTTP streamable transport, session registry, handoff protocol, 12 `cogos_*` tools layered over the kernel's canonical session/handoff routes. The substrate that lets multiple sessions share one kernel. | Python | v0.4.1 |
-| [**mod3**](https://github.com/cogos-dev/mod3) | Model Modality Modulator. Multi-model TTS (Kokoro, Voxtral, Chatterbox, Spark) with queue-aware output, barge-in detection, and turn-taking. Bidirectional voice pipeline, MCP shim, browser dashboard. | Python | v0.1.0 |
-| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity protocol. O(1) verification, hash-chained coherence, stolen keys insufficient for impersonation. | Go | v0.1.0 |
-| [**research**](https://github.com/cogos-dev/research) | Research foundations. EA/EFM thesis, LoRO framework (unified Low-Rank Observer abstraction), Mamba SSM training pipeline, evaluation methodology. | Python | — |
-| [**skills**](https://github.com/cogos-dev/skills) | Portable skill definitions (SKILL.md files) for Claude Code and compatible agents. | Markdown | — |
-| [**charts**](https://github.com/cogos-dev/charts) | Helm charts for deploying CogOS nodes to Kubernetes. | Helm | — |
+| Repo | Description | Language |
+|------|-------------|----------|
+| [**cogos**](https://github.com/cogos-dev/cogos) | The kernel. Workspace state, context assembly, multi-provider inference routing, hash-chained ledger, MCP server, agent harness. | Go |
+| [**mod3**](https://github.com/cogos-dev/mod3) | Voice channel. Multi-model TTS (Kokoro, Voxtral, Chatterbox, Spark) with queue-aware output, barge-in detection, turn-taking. MCP server. | Python |
+| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity protocol. Hash-chained coherence ledger with EMA-weighted trust scoring. The kernel imports it for cross-workspace sync. | Go |
+| [**skills**](https://github.com/cogos-dev/skills) | Portable skill definitions (SKILL.md) for Claude Code and compatible agents. | Markdown |
+| [**research**](https://github.com/cogos-dev/research) | Notes and the training pipeline behind the kernel's design choices. Read these to understand the why. | Python |
+| [**charts**](https://github.com/cogos-dev/charts) | Helm charts for deploying CogOS nodes to Kubernetes. | Helm |
 
 ### Archived
 
 | Repo | Reason |
 |------|--------|
-| desktop | Functionality absorbed by kernel dashboard |
-| openclaw-plugin | Foveated context engine for OpenClaw (archived) |
-
----
-
-## What the kernel does
-
-**Foveated context assembly.** On every prompt, a `UserPromptSubmit` hook fires and the context engine scores workspace documents via a trained Mamba SSM (Tiny Recursive Model, 0.878 mean NDCG). Injects a zone-ordered context window optimized for KV cache reuse.
-
-**Observable substrate.** Every meaningful event (turns, tool calls, config changes, agent state transitions) flows through a hash-chained ledger, a live event-bus broker with SSE streaming, and a JSONL trace sink. All of it is queryable from outside — ledger, traces, events, conversation, kernel slog, tool calls — via MCP and HTTP `/v1/`.
-
-**Mutable config and agent-state control.** Live configuration over `/v1/config` with RFC 7396 merge-patch and rollback. List agents, read per-agent state, and trigger loops via `/v1/agents` and matching MCP tools.
-
-**Library extraction.** 7 importable Go packages under `pkg/` — context assembly, inference routing, coordination, modality, reconciliation, and more. The kernel is a daemon *and* a library.
-
-**Native agent harness.** Built-in agent runner with local model support (Gemma E4B via Ollama). Agents execute within the kernel process with full access to memory and context primitives.
-
-**Multi-provider inference routing.** OpenAI-compatible and Anthropic Messages-compatible HTTP APIs. Routes to the best available provider based on a sovereignty gradient: local inference preferred, cloud escalation when needed. Works with Ollama, LM Studio, Claude, GPT, Codex, and any OpenAI-compatible endpoint — including remote nodes on the LAN.
-
-**MCP protocol support.** 30-tool MCP Streamable HTTP server and Anthropic Messages API proxy. The kernel speaks the protocols that AI tools already use.
-
-**Reconciliation framework.** 8 providers (agent, component, discord, mcp-tools, service, openclaw-gateway, openclaw-agents, openclaw-cron) with a Terraform-style plan/apply/snapshot lifecycle. Topological ordering via Kahn's algorithm. Atomic state writes with lineage tracking and serial numbers.
-
-**Bidirectional voice pipeline.** Modality bus with text and voice channels. The Go kernel defines the interface; Mod3 (Python) implements it. Queue-aware TTS output, barge-in detection, and turn-taking via wire protocol.
-
-**BEP sync engine.** TLS transport with mutual ECDSA authentication, wire protocol with protowire encoding. Phase 1 implementation (fsnotify-based file watching). Designed for multi-node workspace synchronization.
-
-**Coordination protocol.** 5 primitives (claim, release, checkpoint, handoff, broadcast) with file-based storage and 12 CLI subcommands. Enables multi-agent workspace sharing without central coordination.
-
-**Multi-session substrate.** Kernel on `:6931` owns canonical session/handoff state via `SessionRegistry` + `HandoffRegistry` (derived views over `bus_sessions` / `bus_handoffs`; atomic first-wins claim at the bus boundary, not just in-memory). Python bridge on `:7823` exposes 12 `cogos_*` ergonomic shims layered over the kernel routes. Docker compose siblings provide primary/secondary bridge and tailscale pairs.
-
-**Constellation identity.** ECDSA P-256 cryptographic identity with behavioral trust scoring. Identity is not a static credential — it's a dynamical property that emerges from consistent self-validating behavior over time. O(1) mutual verification per peer via signed heartbeats.
-
----
-
-## The interface boundary
-
-CogOS is a polyglot system. The kernel is Go. The voice server is Python. Future modality servers can be in any language. The contract between them is a wire protocol — not shared code.
-
-The Go kernel defines typed interfaces (what blocks a module accepts and emits). The Python SDK provides the corresponding implementation. Together they form a matched pair that documents the boundary by existing on both sides of it.
-
-```
-Go (cogos/pkg/modality/)     ←  wire protocol  →     Python (mod3/)
-Defines the interface                                 Implements it
-```
-
----
+| desktop | Functionality absorbed by the kernel's embedded dashboard. |
+| openclaw-plugin | OpenClaw context plugin, superseded by the kernel's native context engine. |
 
 ## Quick start
 
 ```sh
 # Build the kernel
 git clone https://github.com/cogos-dev/cogos.git
-cd cogos
-make build
+cd cogos && make build
 
-# Start the daemon (localhost by default)
+# Initialize a workspace anywhere (empty folder or existing repo)
+./cogos init --workspace ~/my-project
+
+# Start the daemon
 ./cogos serve --workspace ~/my-project
 # http://localhost:6931/health
-
-# Bind to a LAN address
-./cogos serve --workspace ~/my-project --bind 0.0.0.0:6931
 ```
 
-Requirements: Go 1.25+, macOS, Linux, or Windows (linux/arm64 cross-compilation supported).
+Requirements: Go 1.25+, macOS or Linux.
 
-For voice, add [Mod3](https://github.com/cogos-dev/mod3) as an MCP server in your `.mcp.json`. For multi-session work, run [cog-sandbox-mcp](https://github.com/cogos-dev/cog-sandbox-mcp) on `:7823`.
-
----
+For voice, add [mod3](https://github.com/cogos-dev/mod3) as an MCP server in your `.mcp.json`.
 
 ## CI
 
@@ -172,8 +115,6 @@ Shared reusable workflows in [`.github`](https://github.com/cogos-dev/.github):
 | `go-ci.yml` | `go vet`, build, `go test -race`, golangci-lint |
 | `py-ci.yml` | ruff lint + format, pytest |
 | `pr-checks.yml` | CHANGELOG reminder, required files validation |
-
----
 
 ## Contributing
 
