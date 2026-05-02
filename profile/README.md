@@ -4,6 +4,16 @@ Every modern AI tool has its own memory. Claude Code remembers. Cursor remembers
 
 CogOS is the layer underneath. Persistent workspaces any AI tool can plug into. Cross-tool, cross-device, cross-org. Hierarchical like git remotes, but recursive: keep what's local local, promote what matters upstream, sync what's yours across your machines.
 
+## Where to start
+
+| Who you are | Where to go |
+|---|---|
+| **Contributing to the kernel** | [cogos](https://github.com/cogos-dev/cogos): kernel daemon, context engine, MCP server |
+| **Building voice or modality features** | [mod3](https://github.com/cogos-dev/mod3): TTS, audio queue, turn-taking |
+| **Researching EA/EFM or SRC** | [research](https://github.com/cogos-dev/research): theoretical foundations |
+| **Writing portable agent skills** | [skills](https://github.com/cogos-dev/skills): SKILL.md plugin format |
+| **Deploying to Kubernetes** | [charts](https://github.com/cogos-dev/charts): Helm and Docker Compose |
+
 ## Architecture
 
 ```
@@ -77,7 +87,7 @@ Full feature surface: see the [cogos repo](https://github.com/cogos-dev/cogos).
 | [**mod3**](https://github.com/cogos-dev/mod3) | Voice channel. Multi-model TTS (Kokoro, Voxtral, Chatterbox, Spark) with queue-aware output, barge-in detection, turn-taking. MCP server. | Python |
 | [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity protocol. Hash-chained coherence ledger with EMA-weighted trust scoring. The kernel imports it for cross-workspace sync. | Go |
 | [**skills**](https://github.com/cogos-dev/skills) | Portable skill definitions (SKILL.md) for Claude Code and compatible agents. | Markdown |
-| [**research**](https://github.com/cogos-dev/research) | Notes and the training pipeline behind the kernel's design choices. Read these to understand the why. | Python |
+| [**research**](https://github.com/cogos-dev/research) | Theoretical foundations: EA/EFM thesis, LoRO framework, SRC mathematics and cross-domain instantiations. The grounding layer for the CogOps discipline. | Python |
 | [**charts**](https://github.com/cogos-dev/charts) | Helm charts for deploying CogOS nodes to Kubernetes. | Helm |
 
 ### Archived
