@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in any cogos-dev project, please report it responsibly via GitHub's private vulnerability reporting feature on the affected repository.
+If you discover a security vulnerability in any myrgic project, please report it responsibly via GitHub's private vulnerability reporting feature on the affected repository.
 
 Please include:
 - Description of the vulnerability
