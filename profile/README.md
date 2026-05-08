@@ -1,4 +1,10 @@
-# cogos-dev
+# Myrgic Labs
+
+AI infrastructure built on substrate-mediated cognition. We treat memory, retrieval, and inference as substrate properties — externalized from the model, content-addressed, shared across whatever AI tools touch the same workspace.
+
+Brand and longer-form writing: [myrgic.com](https://myrgic.com/).
+
+## Flagship: CogOS
 
 Every modern AI tool has its own memory. Claude Code remembers. Cursor remembers. Your custom agent remembers. But none of them share with each other, none of them follow you across machines, and there's no shape for what's local versus what's shared.
 
@@ -8,11 +14,11 @@ CogOS is the layer underneath. Persistent workspaces any AI tool can plug into. 
 
 | Who you are | Where to go |
 |---|---|
-| **Contributing to the kernel** | [cogos](https://github.com/cogos-dev/cogos): kernel daemon, context engine, MCP server |
-| **Building voice or modality features** | [mod3](https://github.com/cogos-dev/mod3): TTS, audio queue, turn-taking |
-| **Researching EA/EFM or SRC** | [research](https://github.com/cogos-dev/research): theoretical foundations |
-| **Writing portable agent skills** | [skills](https://github.com/cogos-dev/skills): SKILL.md plugin format |
-| **Deploying to Kubernetes** | [charts](https://github.com/cogos-dev/charts): Helm and Docker Compose |
+| **Contributing to the kernel** | [cogos](https://github.com/myrgic/cogos): kernel daemon, context engine, MCP server |
+| **Building voice or modality features** | [mod3](https://github.com/myrgic/mod3): TTS, audio queue, turn-taking |
+| **Researching EA/EFM or SRC** | [research](https://github.com/myrgic/research): theoretical foundations |
+| **Writing portable agent skills** | [skills](https://github.com/myrgic/skills): SKILL.md plugin format |
+| **Deploying to Kubernetes** | [charts](https://github.com/myrgic/charts): Helm and Docker Compose |
 
 ## Architecture
 
@@ -75,7 +81,7 @@ The CogOS kernel (`cogos`) is one Go binary that:
 - **Reconcilers.** Autonomic loops that maintain workspace invariants. Plan, apply, snapshot, rollback. Topological ordering.
 - **Native agent harness.** Local-model assessment loop running inside the kernel process with kernel-native tools.
 
-Full feature surface: see the [cogos repo](https://github.com/cogos-dev/cogos).
+Full feature surface: see the [cogos repo](https://github.com/myrgic/cogos).
 
 ## Repositories
 
@@ -83,12 +89,12 @@ Full feature surface: see the [cogos repo](https://github.com/cogos-dev/cogos).
 
 | Repo | Description | Language |
 |------|-------------|----------|
-| [**cogos**](https://github.com/cogos-dev/cogos) | The kernel. Workspace state, context assembly, multi-provider inference routing, hash-chained ledger, MCP server, agent harness. | Go |
-| [**mod3**](https://github.com/cogos-dev/mod3) | Voice channel. Multi-model TTS (Kokoro, Voxtral, Chatterbox, Spark) with queue-aware output, barge-in detection, turn-taking. MCP server. | Python |
-| [**constellation**](https://github.com/cogos-dev/constellation) | Distributed identity protocol. Hash-chained coherence ledger with EMA-weighted trust scoring. The kernel imports it for cross-workspace sync. | Go |
-| [**skills**](https://github.com/cogos-dev/skills) | Portable skill definitions (SKILL.md) for Claude Code and compatible agents. | Markdown |
-| [**research**](https://github.com/cogos-dev/research) | Theoretical foundations: EA/EFM thesis, LoRO framework, SRC mathematics and cross-domain instantiations. The grounding layer for the CogOps discipline. | Python |
-| [**charts**](https://github.com/cogos-dev/charts) | Helm charts for deploying CogOS nodes to Kubernetes. | Helm |
+| [**cogos**](https://github.com/myrgic/cogos) | The kernel. Workspace state, context assembly, multi-provider inference routing, hash-chained ledger, MCP server, agent harness. | Go |
+| [**mod3**](https://github.com/myrgic/mod3) | Voice channel. Multi-model TTS (Kokoro, Voxtral, Chatterbox, Spark) with queue-aware output, barge-in detection, turn-taking. MCP server. | Python |
+| [**constellation**](https://github.com/myrgic/constellation) | Distributed identity protocol. Hash-chained coherence ledger with EMA-weighted trust scoring. The kernel imports it for cross-workspace sync. | Go |
+| [**skills**](https://github.com/myrgic/skills) | Portable skill definitions (SKILL.md) for Claude Code and compatible agents. | Markdown |
+| [**research**](https://github.com/myrgic/research) | Theoretical foundations: EA/EFM thesis, LoRO framework, SRC mathematics and cross-domain instantiations. The grounding layer for the CogOps discipline. | Python |
+| [**charts**](https://github.com/myrgic/charts) | Helm charts for deploying CogOS nodes to Kubernetes. | Helm |
 
 ### Archived
 
@@ -101,7 +107,7 @@ Full feature surface: see the [cogos repo](https://github.com/cogos-dev/cogos).
 
 ```sh
 # Build the kernel
-git clone https://github.com/cogos-dev/cogos.git
+git clone https://github.com/myrgic/cogos.git
 cd cogos && make build
 
 # Initialize a workspace anywhere (empty folder or existing repo)
@@ -114,11 +120,11 @@ cd cogos && make build
 
 Requirements: Go 1.25+, macOS or Linux.
 
-For voice, add [mod3](https://github.com/cogos-dev/mod3) as an MCP server in your `.mcp.json`.
+For voice, add [mod3](https://github.com/myrgic/mod3) as an MCP server in your `.mcp.json`.
 
 ## CI
 
-Shared reusable workflows in [`.github`](https://github.com/cogos-dev/.github):
+Shared reusable workflows in [`.github`](https://github.com/myrgic/.github):
 
 | Workflow | What it does |
 |----------|-------------|
