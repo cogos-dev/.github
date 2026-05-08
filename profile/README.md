@@ -16,6 +16,8 @@ CogOS is the layer underneath. Persistent workspaces any AI tool can plug into. 
 |---|---|
 | **Contributing to the kernel** | [cogos](https://github.com/myrgic/cogos): kernel daemon, context engine, MCP server |
 | **Building voice or modality features** | [mod3](https://github.com/myrgic/mod3): TTS, audio queue, turn-taking |
+| **Plugging multiple agents into one kernel** | [cog-sandbox-mcp](https://github.com/myrgic/cog-sandbox-mcp): Python MCP bridge over kernel session/handoff routes |
+| **Seeing the kernel run real infrastructure** | [sites](https://github.com/myrgic/sites): monorepo where the kernel reconciles myrgic's own domain deployments |
 | **Researching EA/EFM or SRC** | [research](https://github.com/myrgic/research): theoretical foundations |
 | **Writing portable agent skills** | [skills](https://github.com/myrgic/skills): SKILL.md plugin format |
 | **Deploying to Kubernetes** | [charts](https://github.com/myrgic/charts): Helm and Docker Compose |
@@ -69,6 +71,12 @@ The composition is recursive, modeled on git remotes. Your workspace can have an
 
 The result is a topology where personal context lives where it belongs, organizational knowledge is shared deliberately rather than absorbed by default, and nothing about your workflow leaves your machine without you choosing.
 
+## The lab runs on its own kernel
+
+This org's public sites are deployed through the same kernel it publishes. [**myrgic/sites**](https://github.com/myrgic/sites) is a monorepo declaring five domain deployments — myrgic.com (canonical) plus four redirects (.dev / .ai / .net / .org). Each is a per-app `site.yaml` spec consumed by the kernel's `SiteProvider`, a `Reconcilable` provider that diffs declared state against live state in the deploy-target repos, plans, and applies via `cogos reconcile site`. First strategy is `GHPagesStrategy`; the contract supports gitlab-pages, k8s ingress, S3, self-hosted rsync as future implementations.
+
+If you want to see the framework doing real work, look there. Same plan/apply/state shape as Terraform or ArgoCD, executed through the kernel CLI rather than a separate operator.
+
 ## What the kernel does
 
 The CogOS kernel (`cogos`) is one Go binary that:
@@ -89,12 +97,16 @@ Full feature surface: see the [cogos repo](https://github.com/myrgic/cogos).
 
 | Repo | Description | Language |
 |------|-------------|----------|
-| [**cogos**](https://github.com/myrgic/cogos) | The kernel. Workspace state, context assembly, multi-provider inference routing, hash-chained ledger, MCP server, agent harness. | Go |
+| [**cogos**](https://github.com/myrgic/cogos) | The kernel. Workspace state, context assembly, multi-provider inference routing, hash-chained ledger, MCP server, agent harness, reconciler framework. | Go |
 | [**mod3**](https://github.com/myrgic/mod3) | Voice channel. Multi-model TTS (Kokoro, Voxtral, Chatterbox, Spark) with queue-aware output, barge-in detection, turn-taking. MCP server. | Python |
-| [**constellation**](https://github.com/myrgic/constellation) | Distributed identity protocol. Hash-chained coherence ledger with EMA-weighted trust scoring. The kernel imports it for cross-workspace sync. | Go |
+| [**cog-sandbox-mcp**](https://github.com/myrgic/cog-sandbox-mcp) | MCP bridge that lets multiple agent sessions (Claude Code, Cursor, custom) share one kernel. HTTP streamable transport, 12 `cogos_*` tools layered over the kernel's session and handoff routes. | Python |
+| [**constellation**](https://github.com/myrgic/constellation) | L1 trust-node protocol. Git-backed hash-chained event ledger, ECDSA P-256 node identity, signed heartbeats, EMA-weighted peer trust. The kernel's `ConstellationBridge` seam consumes this. | Go |
 | [**skills**](https://github.com/myrgic/skills) | Portable skill definitions (SKILL.md) for Claude Code and compatible agents. | Markdown |
 | [**research**](https://github.com/myrgic/research) | Theoretical foundations: EA/EFM thesis, LoRO framework, SRC mathematics and cross-domain instantiations. The grounding layer for the CogOps discipline. | Python |
 | [**charts**](https://github.com/myrgic/charts) | Helm charts for deploying CogOS nodes to Kubernetes. | Helm |
+| [**sites**](https://github.com/myrgic/sites) | Monorepo declaring myrgic's own domain deployments. Per-app `site.yaml` specs reconciled by the kernel's `SiteProvider`. The framework running the lab. | YAML / HTML |
+
+*Auto-managed deploy targets (do not commit by hand — produced by the SiteProvider): `myrgic.github.io`, `myrgic.dev`, `myrgic.ai`, `myrgic.net`, `myrgic.org`.*
 
 ### Archived
 
