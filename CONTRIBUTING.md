@@ -6,9 +6,9 @@ Thanks for your interest in contributing.
 
 Each repo has its own setup and contribution guidelines:
 
-- **[cogos](https://github.com/cogos-dev/cogos/blob/main/CONTRIBUTING.md)** — Go kernel
-- **[mod3](https://github.com/cogos-dev/mod3)** — Python TTS server
-- **[constellation](https://github.com/cogos-dev/constellation)** — Go identity protocol
+- **[cogos](https://github.com/myrgic/cogos/blob/main/CONTRIBUTING.md)** — Go kernel
+- **[mod3](https://github.com/myrgic/mod3)** — Python TTS server
+- **[constellation](https://github.com/myrgic/constellation)** — Go identity protocol
 
 ## General guidelines
 
